@@ -1,0 +1,126 @@
+<html>
+	<head>
+		<title>Žemėlapis</title>
+		<meta name="viewport" content="initial-scale=1.0">
+		<meta charset="utf-8">
+		<style>
+			/* Always set the map height explicitly to define the size of the div
+			* element that contains the map. */
+			#map_canvas {
+				height: 100%;
+				width: 100%;
+				border: 2px solid #3872ac;
+			}
+			/* Optional: Makes the sample page fill the window. */
+			html, body {
+				height: 100%;
+				margin: 0;
+				padding: 0;
+			}
+		</style>
+	</head>
+	<body>
+		<div id="map_canvas"></div>
+		
+		<script>
+		//example: file:///H:/Source/LocationsMap/map.html?locations=retingoj%7CSavanori%C5%B3%20g.%2060,%20Kretinga&locations=Pavogtas%20telefonas%7CMusnink%C5%B3%20gatv%C4%97,14-1%20Vilnius
+
+			var map;
+
+			function initialize() {
+			debugger;
+				console.log(GetQueryString());
+				var locations = getLocationsFromQueryParam(GetQueryString().locations);
+			
+				var bounds = new google.maps.LatLngBounds();
+				var mapCanvas = document.getElementById("map_canvas");
+				map = new google.maps.Map(mapCanvas, {
+					//center: new google.maps.LatLng(37.4419, -122.1419),
+					zoom: 13,
+					mapTypeId: google.maps.MapTypeId.ROADMAP
+				});
+				var geocoder = new google.maps.Geocoder();
+
+				for (i = 0; i < locations.length; i++) {
+					geocodeAddress(locations, i, bounds, geocoder);
+				}
+			}
+			//google.maps.event.addDomListener(window, "load", initialize);
+
+			function geocodeAddress(locations, i, bounds, geocoder) {
+				var title = locations[i].title;
+				var address = locations[i].address;
+				geocoder.geocode({
+					'address': locations[i].address
+				},
+
+				function (results, status) {
+					if (status == google.maps.GeocoderStatus.OK) {
+						var marker = new google.maps.Marker({
+							icon: 'http://maps.google.com/mapfiles/ms/icons/blue.png',
+							map: map,
+							position: results[0].geometry.location,
+							title: title,
+							animation: google.maps.Animation.DROP,
+							address: address
+						})
+						infoWindow(marker, map, title, address);
+						bounds.extend(marker.getPosition());
+						map.fitBounds(bounds);
+					} else {
+						alert("geocode of " + address + " failed:" + status);
+					}
+				});
+			}
+
+			function infoWindow(marker, map, title, address) {
+				google.maps.event.addListener(marker, 'click', function () {
+					var html = "<div><h3>" + title + "</h3><p>" + address + "<br></div></p></div>";
+					iw = new google.maps.InfoWindow({
+						content: html,
+						maxWidth: 350
+					});
+					iw.open(map, marker);
+				});
+			}
+
+			
+			window.GetQueryString = function(b) {
+				return (function(a) {
+					if (a == "") return {};
+					var b = {};
+					for (var i = 0; i < a.length; ++i) {
+						var p = a[i].split('=');
+						if (p.length != 2) continue;
+						if(!b[p[0]])
+							b[p[0]] = [];
+						b[p[0]].push(decodeURIComponent(p[1].replace(/\+/g, " ")));
+					}
+					return b;
+				})(window.location.search.substr(1).split("&"));
+			};
+			
+			// locationQueries must be the String array. 
+			// String will have title and address separated by '|'.
+			// For example: 
+			// [ 
+			//	 'Something|Somewhere', 
+			//	 'Something1|Somewhere2' 
+			// ]
+			function getLocationsFromQueryParam(locationQueries){
+				return (locationQueries || [])
+					.map(function(query){
+						var a = (query || '').split('|');
+						var titleText = a[0];
+						var addressText = a[1];
+						return { title: titleText, address: addressText };
+					})
+					.filter(function(l){
+						return !!l.address;//we only need locations with addresses
+					});
+			}
+		</script>
+		<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyB-JkAGVtT6MhGBCDD-BRzCl4hu3DbaRus&callback=initialize" async defer></script>
+
+	</body>
+</html>
